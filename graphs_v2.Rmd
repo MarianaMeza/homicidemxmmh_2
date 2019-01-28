@@ -1,0 +1,148 @@
+---
+title: "HW2"
+author: "Mariana Meza Hernandez"
+date: "January 27, 2019"
+output: html_document
+---
+
+```{r echo =FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(forcats)
+library(ggthemes)
+```
+
+## Graph 1: Homicide by firearm by month and year
+Even though one cannot confirm causality between both events, it is clear that the level of homicides by firearm in Mexico increased dramatically since the start of the war against organized crime in early 2007. Over the last decades the number of homicides by firearm have remained almost four time higher than before the war began.
+```{r, message=FALSE}
+homicide <- read_csv("homicide_snsp_month.csv")
+homicide_long <- gather (homicide, month, homicides, January:December, factor_key = TRUE) 
+```
+
+```{r}
+month_year_gun <-
+  homicide_long %>%
+  filter(subtype == "CON ARMA DE FUEGO") %>%
+  filter (year > "2000") %>%
+  group_by(year, month) %>%
+  summarize(total_gun = sum(homicides))
+```
+
+```{r}
+ggplot(data = month_year_gun) +
+  geom_tile(aes(x = month, y =year, fill = total_gun)) +
+  scale_y_continuous(breaks = 1997:2017, expand = c(0,0)) +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0)) +
+  geom_hline(aes(yintercept=2007), color="white") +
+  scale_fill_continuous(trans = 'reverse') +
+  ggtitle("Total homicides by firearm by month in Mexico") +
+  labs(x = "Month", y = "Year", fill= "Homicides by firearm", caption = "Source: SNSP: Homicide records by the police")  +
+   annotate("text", x = "May", y = 2006, label = "War Against Organized Crime Begins", size = 3.5, color = "white") 
+```
+
+## Graph 2: Difference between police repors and death certificates
+The two main sources that report homicides in Mexico are the homicide records by the police (SNSP) and the mortality statistics by the autonomous statistic institute (INEGI). In order to understand the violence in Mexico we need to look at both. One of the most interesting phenomena is that since the war against organized crime began, the trends in total violent homicides of both sources flipped. Since 2007, police reports have systematically undereported homicides in Mexico.
+```{r, message = FALSE}
+test <- read_csv("difftrendssnspinegi.csv")
+```
+
+```{r}
+ggplot(test, aes(x=Year, y = total, group=type))+
+ geom_line(aes(color=type)) +
+ geom_point(aes(color=type)) +
+  theme(axis.text.x = element_text(angle = 45))+
+  scale_color_manual(values=c("darkgreen", "orange2"),
+                     name = "Homicide records according to",
+                     breaks = c("death_certificates", "police_reports"),
+                     labels = c("Death certificates","Police reports"))+
+  labs(x = "Year", y = "Total homicides" , subtitle = "This discrepancy is unusual and raises the question if local \n police and attorneys have deliberately underreported homicides", caption = "Sources: INEGI: Mortality statistics. \n and SNSP: Homicide records by the police") +
+
+  xlab("Year") +
+  ggtitle("Since 2007 total homicides reported by police are less \n  than the total number of homicide death certificates") +
+  geom_vline(xintercept = 2007, linetype="dotted")+
+  annotate("segment", x = 2008, xend = 2008, y = 13155, yend = 14006,
+  colour = "blue", linetype= "dotted")+
+  annotate("segment", x = 2009, xend = 2009, y = 16118, yend = 19803,
+  colour = "blue", linetype= "dotted")+
+  annotate("segment", x = 2010, xend = 2010, y = 20143, yend = 25757,
+  colour = "blue", linetype= "dotted")+  
+  annotate("segment", x = 2011, xend = 2011, y = 22409, yend = 27213,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2012, xend = 2012, y = 21459, yend = 25976,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2013, xend = 2013, y = 18106, yend = 23063,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2014, xend = 2014, y = 15520, yend = 20010,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2015, xend = 2015, y = 16909, yend = 20762,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2016, xend = 2016, y = 20547, yend = 24559,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("segment", x = 2017, xend = 2017, y = 25339, yend = 32079,
+  colour = "blue", linetype= "dotted")+ 
+  annotate("text", x = 2007, y = 25000, label = "War Against Organized Crime", angle=90 ) +
+  scale_x_continuous(breaks = 1997:2017, expand = c(0,0.5))
+```
+
+## Graph 3: Homicide rates by state through the years
+The dynamics of homicides have a very local component. As the graph shows, homicides have increase in some states like Colima, Baja California Sur and Zacatecas while it has decreased in states like Durango, the State of Mexico or Queretaro. This is in part because of the varying strength and violence of the drug cartels and the direct confrontations between the cartels and the Mexican police and army.
+
+```{r message = FALSE}
+rank_states <- read_csv("homicideraterankstate2.csv")
+```
+
+```{r}
+ggplot(data = rank_states, aes(x = year, y = rank, group = states)) +
+  geom_line(aes(color = states, alpha = 1), size = 2) +
+  geom_point(aes(color = states, alpha = 1), size = 1) +
+  scale_y_reverse(breaks = 1:nrow(rank_states), expand = c(0,0.5))+
+  geom_point(color = "#FFFFFF", size = 1)+
+  scale_x_continuous(breaks = c(2007,2009,2012,2015,2017), expand = c(0.05,0.05))+
+  geom_text(data=rank_states %>% filter(year=="2007"),
+            aes(label=states, x=2006), size=3.5)+
+  geom_text(data = rank_states %>% filter(year == "2017"),
+            aes(label = states, x = 2018) , size = 3.5) +
+  coord_cartesian(ylim = c(1,32)) + 
+  theme_bw() +
+  theme(legend.position = "none",axis.title.y=element_blank(),axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  scale_color_manual(values = c("grey", "grey", "red3", "grey", "navy", "grey", "grey", "red1", "blue", "grey", "grey", "grey", "grey", "dodgerblue1","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","grey","orangered1" ))+
+  labs(x = "Year",
+       title = "Homicide rates vary from state to state through the years",
+       subtitle = "The states in red show the bigest relative increase in homicide rate and the  states in blue\n show the biggest relative decrease. The Meixcan government should prioritize to decrease homicides \n in the red states rather than the blue states", caption = "Source: SNSP: Homicide records by the police")
+``` 
+
+## Graph 4: Insitutional corruption and reported crime by state
+One of the main issues that fosters the high levels of violence is the fact that people do not trust the justice institutions and do not report crimes. Nevertheless, the graph shows how people report crimes even though thtey percieve their institutions to be corrupt. However, there are states (in red) like Baja Califorina, Guanajuatio, Jalisco, Puebla, and the State of Mexico that do not fit the overall trend by the rest of the states.
+
+```{r}
+incidencia <- (read_csv("denunciados_incidencia.csv"))
+```
+
+```{r}
+ggplot(incidencia, aes(x= corrupcion_mp, y = delitos_denunciados/100, size = Incidencia_delicitva_tasa_2017, label = State)) +
+  geom_smooth() +
+  geom_point(color = ifelse(incidencia$delitos_denunciados > 120005 & incidencia$corrupcion_mp < 80, "red", "blue")) +
+  labs(x = "Percent who say state attorneys are corrupt", y = "Total reported crimes in hundreds ", subtitle = "The red dots are the states that do not fit the general trend and are considered outliers. \n These states have more reported crimes than the average", caption = "Source: ENVIPE: Public Security and Trust Survey", size = "Number of crimes per 100,000") +
+  ggtitle("Perception of corruption and number of reported crimes controlling \n for the number of crimes per 100,000 people") +
+  geom_text(aes(label=ifelse(delitos_denunciados>120005,as.character(State),'')),hjust=1.1,vjust=0,size=3)
+  
+```
+
+## Graph 5: Cause of homicide by sex
+The human side of homicides show how there are different dynamics between men a women. The way men and women are killed show different patterns that may point to different phenomena. Women, unlike men are killed by asphyxiation and knife that point towards the high levels of feminicides in the country. Men on the other hand are killed mostly by firearm that point towards the deaths involved in the war of drugs. 
+```{r}
+causegraph <- read.csv("causegraph.csv")
+```
+```{r}
+ggplot(causegraph) +
+geom_bar(mapping = aes(x = reorder(cause3, -percent), y = percent, group = sexo2, fill = factor(sexo2)),stat = "identity", position = "dodge")+ coord_flip() +
+  scale_y_continuous(expand = c(0,1))+
+  scale_fill_manual ("Gender", values = c("Men" = " navy blue", "Women" = "666")) +
+  labs(x = "Cause of homicide", y = "Percent", subtitle = "Men and women are killed primarely by firearm. Yet women are more likely  than \n men to be murdered by asphyxiation or knife, indicating potential feminicides", caption = "Source: INEGI: Mortality Statistics") +
+  ggtitle("Women are more likely to be  killed by knife \n or asphyxiation than men") +
+  
+  guides(fill=guide_legend("Gender")) 
+```
